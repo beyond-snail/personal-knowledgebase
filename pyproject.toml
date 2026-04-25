@@ -16,6 +16,7 @@ dependencies = [
 kb-init = "kb.cli.main:cmd_init"
 kb-ingest = "kb.cli.main:cmd_ingest"
 kb-serve = "kb.cli.main:cmd_serve"
+kb-event = "kb.cli.main:cmd_event"
 
 [tool.setuptools]
 include-package-data = true

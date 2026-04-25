@@ -14,7 +14,12 @@
     input, button { border-radius: 8px; border: 1px solid #30464f; background: #0f171b; color: #eaf4f7; padding: 10px; }
     button { background: #4edeb8; color: #06221d; border: none; font-weight: 700; }
     .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
-    .item { border-bottom: 1px solid #22333b; padding: 8px 0; font-size: 13px; }
+    .item { border-bottom: 1px solid #22333b; padding: 8px 0; font-size: 13px; cursor: pointer; }
+    .item:hover { background: #122129; }
+    .muted { opacity: .8; font-size: 12px; }
+    .trace-graph { display: grid; gap: 8px; margin-top: 8px; }
+    .node { background: #112028; border: 1px solid #29414b; border-radius: 8px; padding: 8px; font-size: 13px; }
+    .arrow { text-align: center; opacity: .65; }
     @media (max-width: 900px) { .grid, .kpi { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -22,10 +27,10 @@
   <div class="wrap">
     <h2>个人超级知识库</h2>
     <div class="kpi">
-      <div class="card"><b>12,483</b><div>知识条目</div></div>
-      <div class="card"><b>27</b><div>活跃项目</div></div>
-      <div class="card"><b>96.3%</b><div>可追溯率</div></div>
-      <div class="card"><b>AUTO</b><div>状态栏采集</div></div>
+      <div class="card"><b id="k-items">0</b><div>知识条目</div></div>
+      <div class="card"><b id="k-projects">0</b><div>活跃项目</div></div>
+      <div class="card"><b id="k-events">0</b><div>事件条目</div></div>
+      <div class="card"><b id="k-links">0</b><div>追溯关系</div></div>
     </div>
     <div class="grid" style="margin-top:12px;">
       <div class="card">
@@ -34,23 +39,106 @@
           <input id="q" value="知识库" />
           <button onclick="run()">搜索</button>
         </div>
+        <div class="row" style="margin-top:8px;">
+          <input id="projectPath" value="/Users/wucongpeng/Documents/ai/skill/personal-knowledgebase" />
+          <button onclick="syncInbox()">同步Inbox</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <input id="registerPath" value="/Users/wucongpeng/Documents/ai/skill" />
+          <button onclick="registerProject()">注册项目</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <input id="samplePath" value="/Users/wucongpeng/Documents/ai/skill" />
+          <button onclick="pushSampleEvent()">样例事件</button>
+        </div>
         <div id="out"></div>
       </div>
       <div class="card">
         <h3>追溯链</h3>
-        <div>REQ -> TASK -> Decision -> Evidence</div>
+        <div id="traceOut" class="muted">REQ -> TASK -> Decision -> Evidence</div>
       </div>
     </div>
   </div>
   <script>
+    async function loadStats() {
+      const res = await fetch('/api/stats');
+      const data = await res.json();
+      document.getElementById('k-items').textContent = data.items ?? 0;
+      document.getElementById('k-projects').textContent = data.projects ?? 0;
+      document.getElementById('k-events').textContent = data.events ?? 0;
+      document.getElementById('k-links').textContent = data.links ?? 0;
+    }
+
+    async function syncInbox() {
+      const p = document.getElementById('projectPath').value.trim();
+      if (!p) return;
+      await fetch('/api/ingest/inbox?project=' + encodeURIComponent(p), { method: 'POST' });
+      await loadStats();
+    }
+
+    async function registerProject() {
+      const p = document.getElementById('registerPath').value.trim();
+      if (!p) return;
+      await fetch('/api/projects/register?path=' + encodeURIComponent(p), { method: 'POST' });
+      await loadStats();
+    }
+
+    async function pushSampleEvent() {
+      const p = document.getElementById('samplePath').value.trim();
+      if (!p) return;
+      const payload = {
+        event_type: 'workflow.execution.done',
+        req_id: 'REQ-2026-04-25-01',
+        task_id: 'TASK-2026-04-25-04',
+        summary: 'trace api delivered by statusbar',
+        source_path: 'docs/workflow/requirements/任务看板.md'
+      };
+      await fetch('/api/events/push?project=' + encodeURIComponent(p) + '&process_now=true', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      await loadStats();
+      await run();
+    }
+
+    async function trace(itemId) {
+      const res = await fetch('/api/trace/' + encodeURIComponent(itemId));
+      const data = await res.json();
+      const item = data.item;
+      const related = data.related_items || [];
+      const links = data.links || [];
+      const out = document.getElementById('traceOut');
+      if (!item) {
+        out.innerHTML = '<div class="item">无追溯数据</div>';
+        return;
+      }
+      const lines = ['<div class="trace-graph">'];
+      lines.push(`<div class="node"><b>${item.title}</b><br><span class="muted">${item.item_type} · ${item.source_path}</span></div>`);
+      for (const r of related) {
+        lines.push('<div class="arrow">↓</div>');
+        lines.push(`<div class="node"><b>${r.title}</b><br><span class="muted">${r.item_type} · ${r.source_path}</span></div>`);
+      }
+      if (!related.length) {
+        lines.push('<div class="arrow">↓</div>');
+        lines.push(`<div class="node"><span class="muted">暂无关联节点（仅保留事件原文）</span></div>`);
+      }
+      lines.push(`</div><div class="muted">links: ${links.length}</div>`);
+      out.innerHTML = lines.join('');
+    }
+
     async function run() {
       const q = document.getElementById('q').value.trim();
       if (!q) return;
       const res = await fetch('/api/search?q=' + encodeURIComponent(q));
       const data = await res.json();
       const out = document.getElementById('out');
-      out.innerHTML = (data.items || []).map(x => `<div class="item"><b>${x.title}</b><br>${x.source_path}</div>`).join('') || '<div class="item">无结果</div>';
+      out.innerHTML = (data.items || []).map(
+        x => `<div class="item" onclick="trace('${x.item_id}')"><b>${x.title}</b><br><span class="muted">${x.source_path}</span></div>`
+      ).join('') || '<div class="item">无结果</div>';
     }
+    loadStats();
+    setInterval(loadStats, 10000);
     run();
   </script>
 </body>

@@ -12,6 +12,8 @@ dist/
 
 # local runtime data
 knowledge-store/db/knowledge.db
+knowledge-store/db/*.db-wal
+knowledge-store/db/*.db-shm
 knowledge-store/raw/*
 !knowledge-store/raw/.gitkeep
 knowledge-store/normalized/*

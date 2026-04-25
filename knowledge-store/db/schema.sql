@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS links (
 CREATE INDEX IF NOT EXISTS idx_items_project_type ON items(project_id, item_type);
 CREATE INDEX IF NOT EXISTS idx_items_hash ON items(content_hash);
 CREATE INDEX IF NOT EXISTS idx_links_from_to ON links(from_id, to_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_links_unique ON links(from_id, to_id, relation_type);
 
 CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
   item_id UNINDEXED,
