@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal Knowledgebase</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0c1114; color: #eaf4f7; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .grid { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+    .card { background: #151f24; border: 1px solid #24343c; border-radius: 12px; padding: 14px; }
+    .kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .kpi .card { text-align: center; }
+    input, button { border-radius: 8px; border: 1px solid #30464f; background: #0f171b; color: #eaf4f7; padding: 10px; }
+    button { background: #4edeb8; color: #06221d; border: none; font-weight: 700; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+    .item { border-bottom: 1px solid #22333b; padding: 8px 0; font-size: 13px; }
+    @media (max-width: 900px) { .grid, .kpi { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>个人超级知识库</h2>
+    <div class="kpi">
+      <div class="card"><b>12,483</b><div>知识条目</div></div>
+      <div class="card"><b>27</b><div>活跃项目</div></div>
+      <div class="card"><b>96.3%</b><div>可追溯率</div></div>
+      <div class="card"><b>AUTO</b><div>状态栏采集</div></div>
+    </div>
+    <div class="grid" style="margin-top:12px;">
+      <div class="card">
+        <h3>检索</h3>
+        <div class="row">
+          <input id="q" value="知识库" />
+          <button onclick="run()">搜索</button>
+        </div>
+        <div id="out"></div>
+      </div>
+      <div class="card">
+        <h3>追溯链</h3>
+        <div>REQ -> TASK -> Decision -> Evidence</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    async function run() {
+      const q = document.getElementById('q').value.trim();
+      if (!q) return;
+      const res = await fetch('/api/search?q=' + encodeURIComponent(q));
+      const data = await res.json();
+      const out = document.getElementById('out');
+      out.innerHTML = (data.items || []).map(x => `<div class="item"><b>${x.title}</b><br>${x.source_path}</div>`).join('') || '<div class="item">无结果</div>';
+    }
+    run();
+  </script>
+</body>
+</html>

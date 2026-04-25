@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "personal-knowledgebase"
+version = "0.1.0"
+description = "Local-first personal knowledgebase"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+]
+
+[project.scripts]
+kb-init = "kb.cli.main:cmd_init"
+kb-ingest = "kb.cli.main:cmd_ingest"
+kb-serve = "kb.cli.main:cmd_serve"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["kb*"]
