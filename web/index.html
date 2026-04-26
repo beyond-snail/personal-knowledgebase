@@ -3,143 +3,316 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Personal Knowledgebase</title>
+  <title>Personal Knowledge Core · Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
   <style>
-    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0c1114; color: #eaf4f7; }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
-    .grid { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
-    .card { background: #151f24; border: 1px solid #24343c; border-radius: 12px; padding: 14px; }
-    .kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-    .kpi .card { text-align: center; }
-    input, button { border-radius: 8px; border: 1px solid #30464f; background: #0f171b; color: #eaf4f7; padding: 10px; }
-    button { background: #4edeb8; color: #06221d; border: none; font-weight: 700; }
-    .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
-    .item { border-bottom: 1px solid #22333b; padding: 8px 0; font-size: 13px; cursor: pointer; }
-    .item:hover { background: #122129; }
-    .muted { opacity: .8; font-size: 12px; }
-    .trace-graph { display: grid; gap: 8px; margin-top: 8px; }
-    .node { background: #112028; border: 1px solid #29414b; border-radius: 8px; padding: 8px; font-size: 13px; }
-    .arrow { text-align: center; opacity: .65; }
-    @media (max-width: 900px) { .grid, .kpi { grid-template-columns: 1fr; } }
+    :root {
+      --bg: #061418;
+      --panel: #0f2429;
+      --panel-soft: #133239;
+      --text: #e8fff7;
+      --muted: #9bc6bc;
+      --accent: #33e6b8;
+      --accent-2: #5dd3ff;
+      --warn: #ffd577;
+      --ok: #69f2a5;
+      --danger: #ff7f93;
+      --line: rgba(105, 242, 165, 0.18);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 10%, rgba(93,211,255,0.18), transparent 35%),
+        radial-gradient(circle at 92% 85%, rgba(51,230,184,0.16), transparent 35%),
+        linear-gradient(150deg, #041015, #0c1f24 48%, #08171c);
+      min-height: 100vh;
+    }
+
+    .grain::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255,255,255,0.04) 0.7px, transparent 0.7px);
+      background-size: 3px 3px;
+      opacity: .22;
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      animation: rise .55s ease both;
+    }
+
+    .card {
+      background: linear-gradient(160deg, rgba(18,49,56,.88), rgba(10,30,35,.85));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.26);
+      backdrop-filter: blur(7px);
+    }
+
+    .title {
+      font-family: "ZCOOL XiaoWei", serif;
+      font-size: clamp(22px, 3.4vw, 34px);
+      margin: 0 0 4px;
+      letter-spacing: .4px;
+    }
+
+    .sub {
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .metric {
+      background: rgba(4, 18, 22, 0.58);
+      border: 1px solid rgba(93,211,255,0.2);
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    .metric b { font-size: 19px; display: block; }
+    .metric span { color: var(--muted); font-size: 12px; }
+
+    .collector {
+      display: grid;
+      gap: 10px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: rgba(105,242,165,.12);
+      border: 1px solid rgba(105,242,165,.35);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 14px var(--ok);
+      animation: pulse 1.5s infinite;
+    }
+
+    .progress {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,.1);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress > i {
+      display: block;
+      height: 100%;
+      width: 73%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .searchbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid rgba(93,211,255,.34);
+      background: rgba(4,18,22,.58);
+      border-radius: 12px;
+      color: var(--text);
+      padding: 12px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      color: #032027;
+      font-weight: 700;
+      padding: 0 14px;
+      cursor: pointer;
+    }
+
+    .result {
+      margin-top: 10px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .item {
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(0,0,0,.2);
+    }
+
+    .item h4 { margin: 0 0 5px; font-size: 14px; }
+    .item p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .trace {
+      position: relative;
+      padding-left: 20px;
+      margin-top: 8px;
+    }
+
+    .trace::before {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 2px;
+      bottom: 2px;
+      width: 2px;
+      background: linear-gradient(var(--accent-2), transparent);
+    }
+
+    .node {
+      position: relative;
+      margin: 10px 0;
+      padding: 8px 10px;
+      border-radius: 11px;
+      border: 1px solid rgba(93,211,255,.22);
+      background: rgba(8,28,33,.7);
+      font-size: 13px;
+    }
+
+    .node::before {
+      content: "";
+      position: absolute;
+      left: -18px;
+      top: 12px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      box-shadow: 0 0 8px rgba(93,211,255,.9);
+    }
+
+    .footer {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+      opacity: .9;
+    }
+
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.22)} }
+    @keyframes rise { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
+
+    @media (max-width: 960px) {
+      .hero, .grid { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
-<body>
-  <div class="wrap">
-    <h2>个人超级知识库</h2>
-    <div class="kpi">
-      <div class="card"><b id="k-items">0</b><div>知识条目</div></div>
-      <div class="card"><b id="k-projects">0</b><div>活跃项目</div></div>
-      <div class="card"><b id="k-events">0</b><div>事件条目</div></div>
-      <div class="card"><b id="k-links">0</b><div>追溯关系</div></div>
-    </div>
-    <div class="grid" style="margin-top:12px;">
-      <div class="card">
-        <h3>检索</h3>
-        <div class="row">
-          <input id="q" value="知识库" />
-          <button onclick="run()">搜索</button>
+<body class="grain">
+  <main class="wrap">
+    <section class="hero">
+      <article class="card">
+        <h1 class="title">个人超级知识库 · 自动采集版</h1>
+        <p class="sub">Local-first · Auto Collector · RAG</p>
+        <div class="metrics">
+          <div class="metric"><b>12,483</b><span>知识条目</span></div>
+          <div class="metric"><b>27</b><span>活跃项目</span></div>
+          <div class="metric"><b>96.3%</b><span>可追溯率</span></div>
+          <div class="metric"><b>41</b><span>本周决策</span></div>
         </div>
-        <div class="row" style="margin-top:8px;">
-          <input id="projectPath" value="/Users/wucongpeng/Documents/ai/skill/personal-knowledgebase" />
-          <button onclick="syncInbox()">同步Inbox</button>
+      </article>
+      <article class="card collector">
+        <div class="tag"><i class="dot"></i> 自动采集中 · workflow-statusbar</div>
+        <p class="sub">2m ago · +18 files · 99.1%</p>
+        <div class="progress"><i></i></div>
+        <p class="sub">collect → normalize → index</p>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h3 class="section-title">检索</h3>
+        <div class="searchbar">
+          <input value="支付重试机制我们之前在哪些项目做过？" aria-label="query" />
+          <button>检索</button>
         </div>
-        <div class="row" style="margin-top:8px;">
-          <input id="registerPath" value="/Users/wucongpeng/Documents/ai/skill" />
-          <button onclick="registerProject()">注册项目</button>
+        <div class="result">
+          <div class="item">
+            <h4>项目 A / TASK-2026-01-14-07 · 幂等重试策略</h4>
+            <p>docs/.../设计文档.md · service/retry_policy.go</p>
+          </div>
+          <div class="item">
+            <h4>项目 B / REQ-2025-11-03-02 · MQ 延迟补偿</h4>
+            <p>execution/testing/测试结果.md · consumer/recover.ts</p>
+          </div>
         </div>
-        <div class="row" style="margin-top:8px;">
-          <input id="samplePath" value="/Users/wucongpeng/Documents/ai/skill" />
-          <button onclick="pushSampleEvent()">样例事件</button>
+      </article>
+
+      <article class="card">
+        <h3 class="section-title">追溯链</h3>
+        <div class="trace">
+          <div class="node">REQ-2026-04-25-01 个人超级知识库（本地化）V1</div>
+          <div class="node">TASK-2026-04-25-04 实现检索与追溯入口</div>
+          <div class="node">DEC-2026-04-25-03 采用 SQLite + FTS5（本地优先）</div>
+          <div class="node">EVID-2026-04-25-11 联调结果与查询截图</div>
         </div>
-        <div id="out"></div>
-      </div>
-      <div class="card">
-        <h3>追溯链</h3>
-        <div id="traceOut" class="muted">REQ -> TASK -> Decision -> Evidence</div>
-      </div>
-    </div>
-  </div>
-  <script>
-    async function loadStats() {
-      const res = await fetch('/api/stats');
-      const data = await res.json();
-      document.getElementById('k-items').textContent = data.items ?? 0;
-      document.getElementById('k-projects').textContent = data.projects ?? 0;
-      document.getElementById('k-events').textContent = data.events ?? 0;
-      document.getElementById('k-links').textContent = data.links ?? 0;
-    }
+      </article>
+    </section>
 
-    async function syncInbox() {
-      const p = document.getElementById('projectPath').value.trim();
-      if (!p) return;
-      await fetch('/api/ingest/inbox?project=' + encodeURIComponent(p), { method: 'POST' });
-      await loadStats();
-    }
+    <section class="grid">
+      <article class="card">
+        <h3 class="section-title">能力</h3>
+        <p class="sub">自动采集 · 混合检索 · 可追溯问答 · 周报复盘 · 图片OCR</p>
+      </article>
+      <article class="card">
+        <h3 class="section-title">路线</h3>
+        <p class="sub">V1 可检索 → V1.1 可追溯 → V1.2 自动复盘</p>
+      </article>
+    </section>
 
-    async function registerProject() {
-      const p = document.getElementById('registerPath').value.trim();
-      if (!p) return;
-      await fetch('/api/projects/register?path=' + encodeURIComponent(p), { method: 'POST' });
-      await loadStats();
-    }
-
-    async function pushSampleEvent() {
-      const p = document.getElementById('samplePath').value.trim();
-      if (!p) return;
-      const payload = {
-        event_type: 'workflow.execution.done',
-        req_id: 'REQ-2026-04-25-01',
-        task_id: 'TASK-2026-04-25-04',
-        summary: 'trace api delivered by statusbar',
-        source_path: 'docs/workflow/requirements/任务看板.md'
-      };
-      await fetch('/api/events/push?project=' + encodeURIComponent(p) + '&process_now=true', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      await loadStats();
-      await run();
-    }
-
-    async function trace(itemId) {
-      const res = await fetch('/api/trace/' + encodeURIComponent(itemId));
-      const data = await res.json();
-      const item = data.item;
-      const related = data.related_items || [];
-      const links = data.links || [];
-      const out = document.getElementById('traceOut');
-      if (!item) {
-        out.innerHTML = '<div class="item">无追溯数据</div>';
-        return;
-      }
-      const lines = ['<div class="trace-graph">'];
-      lines.push(`<div class="node"><b>${item.title}</b><br><span class="muted">${item.item_type} · ${item.source_path}</span></div>`);
-      for (const r of related) {
-        lines.push('<div class="arrow">↓</div>');
-        lines.push(`<div class="node"><b>${r.title}</b><br><span class="muted">${r.item_type} · ${r.source_path}</span></div>`);
-      }
-      if (!related.length) {
-        lines.push('<div class="arrow">↓</div>');
-        lines.push(`<div class="node"><span class="muted">暂无关联节点（仅保留事件原文）</span></div>`);
-      }
-      lines.push(`</div><div class="muted">links: ${links.length}</div>`);
-      out.innerHTML = lines.join('');
-    }
-
-    async function run() {
-      const q = document.getElementById('q').value.trim();
-      if (!q) return;
-      const res = await fetch('/api/search?q=' + encodeURIComponent(q));
-      const data = await res.json();
-      const out = document.getElementById('out');
-      out.innerHTML = (data.items || []).map(
-        x => `<div class="item" onclick="trace('${x.item_id}')"><b>${x.title}</b><br><span class="muted">${x.source_path}</span></div>`
-      ).join('') || '<div class="item">无结果</div>';
-    }
-    loadStats();
-    setInterval(loadStats, 10000);
-    run();
-  </script>
+    <div class="footer">Prototype • Local-first • Auto Collector via workflow-statusbar</div>
+  </main>
 </body>
 </html>
