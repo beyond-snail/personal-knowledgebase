@@ -186,6 +186,7 @@
       border-radius: 12px;
       padding: 10px;
       background: rgba(0,0,0,.2);
+      cursor: pointer;
     }
 
     .item h4 { margin: 0 0 5px; font-size: 14px; }
@@ -234,6 +235,11 @@
       box-shadow: 0 0 8px rgba(93,211,255,.9);
     }
 
+    .muted {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
     .footer {
       font-size: 12px;
       color: var(--muted);
@@ -257,15 +263,15 @@
         <h1 class="title">个人超级知识库 · 自动采集版</h1>
         <p class="sub">Local-first · Auto Collector · RAG</p>
         <div class="metrics">
-          <div class="metric"><b>12,483</b><span>知识条目</span></div>
-          <div class="metric"><b>27</b><span>活跃项目</span></div>
-          <div class="metric"><b>96.3%</b><span>可追溯率</span></div>
-          <div class="metric"><b>41</b><span>本周决策</span></div>
+          <div class="metric"><b id="k-items">0</b><span>知识条目</span></div>
+          <div class="metric"><b id="k-projects">0</b><span>活跃项目</span></div>
+          <div class="metric"><b id="k-links">0</b><span>可追溯关系</span></div>
+          <div class="metric"><b id="k-events">0</b><span>事件条目</span></div>
         </div>
       </article>
       <article class="card collector">
         <div class="tag"><i class="dot"></i> 自动采集中 · workflow-statusbar</div>
-        <p class="sub">2m ago · +18 files · 99.1%</p>
+        <p class="sub" id="collector-meta">等待新事件 · Local-first</p>
         <div class="progress"><i></i></div>
         <p class="sub">collect → normalize → index</p>
       </article>
@@ -275,28 +281,16 @@
       <article class="card">
         <h3 class="section-title">检索</h3>
         <div class="searchbar">
-          <input value="支付重试机制我们之前在哪些项目做过？" aria-label="query" />
-          <button>检索</button>
+          <input id="q" value="知识库" aria-label="query" />
+          <button type="button" onclick="run()">检索</button>
         </div>
-        <div class="result">
-          <div class="item">
-            <h4>项目 A / TASK-2026-01-14-07 · 幂等重试策略</h4>
-            <p>docs/.../设计文档.md · service/retry_policy.go</p>
-          </div>
-          <div class="item">
-            <h4>项目 B / REQ-2025-11-03-02 · MQ 延迟补偿</h4>
-            <p>execution/testing/测试结果.md · consumer/recover.ts</p>
-          </div>
-        </div>
+        <div class="result" id="out"></div>
       </article>
 
       <article class="card">
         <h3 class="section-title">追溯链</h3>
-        <div class="trace">
-          <div class="node">REQ-2026-04-25-01 个人超级知识库（本地化）V1</div>
-          <div class="node">TASK-2026-04-25-04 实现检索与追溯入口</div>
-          <div class="node">DEC-2026-04-25-03 采用 SQLite + FTS5（本地优先）</div>
-          <div class="node">EVID-2026-04-25-11 联调结果与查询截图</div>
+        <div class="trace" id="traceOut">
+          <div class="node">REQ -> TASK -> Decision -> Evidence</div>
         </div>
       </article>
     </section>
@@ -314,5 +308,61 @@
 
     <div class="footer">Prototype • Local-first • Auto Collector via workflow-statusbar</div>
   </main>
+  <script>
+    function esc(text) {
+      return String(text ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    async function loadStats() {
+      const res = await fetch("/api/stats");
+      const data = await res.json();
+      document.getElementById("k-items").textContent = data.items ?? 0;
+      document.getElementById("k-projects").textContent = data.projects ?? 0;
+      document.getElementById("k-links").textContent = data.links ?? 0;
+      document.getElementById("k-events").textContent = data.events ?? 0;
+      document.getElementById("collector-meta").textContent = `最近更新 · items ${data.items ?? 0} · links ${data.links ?? 0}`;
+    }
+
+    async function trace(itemId) {
+      const res = await fetch("/api/trace/" + encodeURIComponent(itemId));
+      const data = await res.json();
+      const out = document.getElementById("traceOut");
+      if (!data.item) {
+        out.innerHTML = '<div class="node">无追溯数据</div>';
+        return;
+      }
+      const lines = [];
+      lines.push(`<div class="node"><b>${esc(data.item.title)}</b><br><span class="muted">${esc(data.item.item_type)} · ${esc(data.item.source_path)}</span></div>`);
+      const related = data.related_items || [];
+      for (const item of related) {
+        lines.push(`<div class="node"><b>${esc(item.title)}</b><br><span class="muted">${esc(item.item_type)} · ${esc(item.source_path)}</span></div>`);
+      }
+      if (!related.length) {
+        lines.push('<div class="node">暂无关联节点</div>');
+      }
+      out.innerHTML = lines.join("");
+    }
+
+    async function run() {
+      const q = document.getElementById("q").value.trim();
+      if (!q) return;
+      const res = await fetch("/api/search?q=" + encodeURIComponent(q));
+      const data = await res.json();
+      const out = document.getElementById("out");
+      const items = data.items || [];
+      out.innerHTML = items.map((item) =>
+        `<div class="item" onclick="trace('${esc(item.item_id)}')"><h4>${esc(item.title)}</h4><p>${esc(item.source_path)}</p></div>`
+      ).join("") || '<div class="item"><h4>无结果</h4><p>换个关键词再试试</p></div>';
+    }
+
+    loadStats();
+    run();
+    setInterval(loadStats, 10000);
+  </script>
 </body>
 </html>
